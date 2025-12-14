@@ -58,7 +58,7 @@ CHECK_INTERVAL=0.1
 
 show_waybar() {
     if ! pgrep -x waybar > /dev/null; then
-        waybar &
+        uwsm-app -- waybar &
         sleep 0.3
     fi
 }
@@ -116,7 +116,8 @@ Or restart Hyprland completely.
 
 1. **Cursor Position Monitoring**: Uses `hyprctl cursorpos -j` to get cursor Y coordinate
 2. **State Management**: Tracks whether waybar is "visible" or "hidden"
-3. **Process Management**: Uses `pkill -x waybar` to kill waybar, `waybar &` to start it
+3. **Process Management**: Uses `pkill -x waybar` to kill waybar, `uwsm-app -- waybar &` to start it
+   - **Important**: Omarchy requires `uwsm-app` wrapper to launch waybar correctly
 4. **No Gap Changes**: Gaps are set once at startup to `0 0 0 0`, then never changed
    - This prevents window layout recalculation
    - Waybar overlays on top of windows instead of pushing them down
@@ -143,7 +144,38 @@ CHECK_INTERVAL=0.1  # 100ms (faster = more CPU, slower = less responsive)
 
 ## Troubleshooting
 
-### Waybar Doesn't Show on Hover
+### Waybar Doesn't Show on Hover After Omarchy Update
+
+**Problem**: After updating Omarchy, the waybar auto-hide script stopped working. Hovering near the top didn't show waybar.
+
+**Root Cause**: Omarchy uses a wrapper application launcher (`uwsm-app`) to start waybar instead of launching `waybar` directly. The script was trying to start waybar with `waybar &`, but Omarchy expects applications to be launched via `uwsm-app -- waybar`.
+
+**Solution**: Updated the `show_waybar()` function to use `uwsm-app -- waybar &` instead of `waybar &`. This ensures waybar is launched through Omarchy's application management system, which handles proper initialization and environment setup.
+
+**Why It Works Now**:
+- `uwsm-app` is Omarchy's unified application launcher wrapper
+- It ensures waybar starts with the correct environment variables and settings
+- It integrates with Omarchy's application management system
+- Without it, waybar may start but not function correctly or may not appear at all
+
+**To Verify Fix**:
+1. Check if script is using correct launcher:
+   ```bash
+   grep "uwsm-app" ~/.local/bin/waybar-auto-hide
+   ```
+   Should show: `uwsm-app -- waybar &`
+
+2. Manually test waybar start:
+   ```bash
+   uwsm-app -- waybar &
+   ```
+
+3. Check if script is running:
+   ```bash
+   pgrep -f waybar-auto-hide
+   ```
+
+### Waybar Doesn't Show on Hover (General)
 
 1. Check if script is running:
    ```bash
@@ -158,7 +190,7 @@ CHECK_INTERVAL=0.1  # 100ms (faster = more CPU, slower = less responsive)
 
 3. Manually test waybar start:
    ```bash
-   waybar &
+   uwsm-app -- waybar &
    ```
 
 4. Check script logs (if debug enabled):
@@ -195,6 +227,7 @@ CHECK_INTERVAL=0.1  # 100ms (faster = more CPU, slower = less responsive)
 - `hyprctl` - Hyprland control utility (comes with Hyprland)
 - `jq` - JSON processor (for parsing cursor position)
 - `waybar` - Waybar bar process
+- `uwsm-app` - Omarchy's unified application launcher wrapper (required to start waybar)
 - `pgrep` / `pkill` - Process management (standard Linux tools)
 
 ## Notes
