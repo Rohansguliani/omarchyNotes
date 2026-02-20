@@ -1,38 +1,38 @@
-# Waybar Auto-Hide Configuration
+# Waybar Auto-Hide Configuration (Corner Activation)
 
 ## Overview
-This document explains how to configure waybar to automatically hide when the cursor is away from the top of the screen, and show when hovering near the top. When hidden, windows extend all the way to the top edge with no gap.
+This document explains how to configure waybar to automatically hide when the cursor is away from the top of the screen, and **only show when hovering in the extreme top-left or top-right corners**. When hidden, windows extend all the way to the top edge with no gap.
 
 ## How It Works
 
 ### Script: `~/.local/bin/waybar-auto-hide`
 
 The script monitors cursor position and:
-1. **Hides waybar** when cursor is more than 60px from top
+1. **Hides waybar** when cursor is more than 100px from top
    - Kills the waybar process completely
    - Windows extend to top (no gap changes needed)
-2. **Shows waybar** when cursor is within 40px of top
+2. **Shows waybar** when cursor is pushed into the **Top-Left** or **Top-Right** corners (within 50px horizontally and 20px vertically)
    - Starts waybar process
    - Waybar overlays on top of windows (no window movement)
 
 ### Configuration
 
 **Thresholds** (adjustable in script):
-- `SHOW_THRESHOLD=40` - Show waybar when cursor is within 40px of top
-- `HIDE_THRESHOLD=60` - Hide waybar when cursor is more than 60px from top
+- `CORNER_SIZE=50` - How close to the left/right edge the cursor must be (pixels)
+- `TOP_THRESHOLD=20` - How close to the top edge the cursor must be
+- `HIDE_THRESHOLD=100` - Hide waybar when cursor is more than 100px down
 - `CHECK_INTERVAL=0.1` - Check cursor position every 100ms
 
 **Key Design Decision:**
-- **No gap changes** - Waybar overlays on windows instead of pushing them down
-- This prevents horizontal window movement when waybar shows/hides
-- Windows stay in place, only waybar appears/disappears
+- **Corner Activation** - Prevents accidental triggers when simply moving the mouse to the top of a maximized window (like closing a browser tab).
+- **No gap changes** - Waybar overlays on windows instead of pushing them down.
+- Windows stay in place, only waybar appears/disappears.
 
 ### Behavior
 
 **When waybar is hidden:**
 - Waybar process is killed (completely gone, not just transparent)
 - Windows extend all the way to the top edge
-- No gap above windows
 - Full screen real estate for applications
 
 **When waybar is shown:**
@@ -51,10 +51,17 @@ The script is located at: `~/.local/bin/waybar-auto-hide`
 ```bash
 #!/bin/bash
 
-# Waybar auto-hide script - Simplified version
-HIDE_THRESHOLD=60
-SHOW_THRESHOLD=40
+# Waybar auto-hide script - Corner-based activation
+# Only shows when cursor is in top-left OR top-right corner
+
+CORNER_SIZE=50      # How close to corner (pixels)
+TOP_THRESHOLD=20    # How close to top edge
+HIDE_THRESHOLD=100  # Hide when this far from top
 CHECK_INTERVAL=0.1
+
+# Screen width (hardcoded for 2880x1920 @ 1.25 scale = 2304 logical)
+SCREEN_WIDTH=2304
+RIGHT_EDGE=$((SCREEN_WIDTH - CORNER_SIZE))
 
 show_waybar() {
     if ! pgrep -x waybar > /dev/null; then
@@ -75,11 +82,19 @@ hide_waybar
 hyprctl keyword general:gaps_out "0 0 0 0" 2>/dev/null
 
 while true; do
-    Y=$(hyprctl cursorpos -j 2>/dev/null | jq -r '.y // 999')
+    POS=$(hyprctl cursorpos -j 2>/dev/null)
+    X=$(echo "$POS" | jq -r '.x // 999')
+    Y=$(echo "$POS" | jq -r '.y // 999')
     
-    if [ "$Y" -le "$SHOW_THRESHOLD" ] && [ "$STATE" != "visible" ]; then
-        show_waybar
-        STATE="visible"
+    # Check if in top-left corner OR top-right corner
+    IN_TOP_LEFT=$( [ "$X" -le "$CORNER_SIZE" ] && [ "$Y" -le "$TOP_THRESHOLD" ] && echo 1 || echo 0 )
+    IN_TOP_RIGHT=$( [ "$X" -ge "$RIGHT_EDGE" ] && [ "$Y" -le "$TOP_THRESHOLD" ] && echo 1 || echo 0 )
+    
+    if [ "$IN_TOP_LEFT" -eq 1 ] || [ "$IN_TOP_RIGHT" -eq 1 ]; then
+        if [ "$STATE" != "visible" ]; then
+            show_waybar
+            STATE="visible"
+        fi
     elif [ "$Y" -gt "$HIDE_THRESHOLD" ] && [ "$STATE" != "hidden" ]; then
         hide_waybar
         STATE="hidden"
