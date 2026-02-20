@@ -7,6 +7,7 @@ This document summarizes all major configuration changes made to the Omarchy set
 
 1. ✅ **4-Finger Swipe Gesture** - See `4-finger-swipe-gesture.md`
 2. ✅ **Alt+1 Screenshot** - See `alt-1-screenshot.md`
+3. ✅ **Flush Window Borders & Gaps** - See `window-borders-gaps.md`
 
 ## Other Major Changes
 
