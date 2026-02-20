@@ -76,6 +76,49 @@ chromium --ozone-platform=x11
 
 ---
 
+### 4. Sleep Shortcut (Ctrl+Alt+S)
+
+**File**: `~/.config/hypr/bindings.conf`
+
+**What it does**:
+- Instantly puts the machine to sleep via `systemctl suspend` when pressing `Ctrl + Alt + S`.
+
+**Command added**:
+```conf
+bind = CTRL ALT, S, exec, systemctl suspend
+```
+
+---
+
+### 5. Surface Pro 10 Keyboard Autosuspend Fix
+
+**File**: `/etc/default/limine`
+
+**What it does**:
+- Disables Linux USB autosuspend entirely by setting `usbcore.autosuspend=-1` in the kernel boot parameters.
+- This stops the Surface Type Cover (trackpad and keyboard) from randomly freezing or disconnecting due to aggressive power-saving drops when idle.
+
+**Command added to `KERNEL_CMDLINE[default]`**:
+```conf
+KERNEL_CMDLINE[default]+=" usbcore.autosuspend=-1"
+```
+*(Requires running `sudo limine-update` to regenerate boot configs)*
+
+---
+
+### 6. OpenCode Client-Side Decoration (Title Bar) Fix
+
+**File**: `~/.config/ai.opencode.desktop/.window-state.json`
+
+**What it does**:
+- Hides the thick system window title bar drawn by OpenCode on Wayland/Hyprland.
+- Leaves only the internal HTML/CSS OpenCode navigation bar for a cleaner, borderless appearance.
+
+**Configuration Changed**:
+Changed `"decorated": true` to `"decorated": false` in the JSON config.
+
+---
+
 ## Quick Reference: All Changes
 
 ### Input/Touchpad

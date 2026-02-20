@@ -101,6 +101,37 @@ hyprctl getoption gestures:workspace_swipe_use_r
 # Returns: int: 1 (default: true)
 ```
 
+## Current Working Configuration (Updated for Sensitivity & Empty Workspaces)
+
+We resolved the issues with the swipe being too slow, snapping back, or not registering until a large distance was covered. Hyprland 0.52+ uses a new gesture engine where `workspace_swipe` and `workspace_swipe_fingers` are deprecated. 
+
+We kept the native `gesture = 4, horizontal, workspace` line, and customized the threshold rules in the `gestures {}` block.
+
+**File**: `~/.config/hypr/input.conf`
+
+**Working Configuration**:
+```conf
+# Enable touchpad gestures for changing workspaces
+gesture = 4, horizontal, workspace
+
+gestures {
+    # Fast swipe overrides
+    workspace_swipe_distance = 150
+    workspace_swipe_cancel_ratio = 0.1
+    workspace_swipe_min_speed_to_force = 5
+
+    # Allow swiping to empty workspaces (like macOS)
+    workspace_swipe_forever = true
+    # Don't create new workspaces when swiping past the last one
+    workspace_swipe_create_new = false
+}
+```
+
+**What this does:**
+1. **`workspace_swipe_distance = 150`**: Cuts the required physical drag distance in half (default is 300px).
+2. **`workspace_swipe_cancel_ratio = 0.1`**: Lowers the snap-back threshold to 10% (default 50%). Moving your fingers just a tiny bit and letting go will now commit the switch instead of cancelling it.
+3. **`workspace_swipe_min_speed_to_force = 5`**: Ensures even a small, quick flick of the wrist forces the workspace change.
+
 ## Files Involved
 
 1. **Primary Config**: `~/.config/hypr/input.conf`
